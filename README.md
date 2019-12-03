@@ -21,3 +21,21 @@ conda activate BSseq
 ```
 
 After this, you'll need to go through the bioinformatic pipeline for pre-processing your data.
+
+# Pre-processing Pipeline
+
+The overall pipeline looks like this:
+
+![Pre-processing pipeline]()
+
+A brief description of each step is below.
+
+## FastQC
+
+This tool generates an HTML report that reviews a variety of quality control (QC) metrics for sequencing data, in general.
+Important metrics to consider are:
+
+* Per base sequence quality
+* Sequence length distribution
+* Sequence duplication levels
+* Adapter content
