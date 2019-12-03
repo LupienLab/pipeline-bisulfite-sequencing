@@ -29,5 +29,5 @@ conda install \
     bioconda::bioconductor-illuminahumanmethylationepicanno.ilm10b4.hg19 \
     bioconda::bioconductor-illuminahumanmethylation450kmanifest \
     bioconda::bioconductor-illuminahumanmethylation450kanno.ilmn12.hg19 \
-    bioconductor-bsgenome.hsapiens.ucsc.hg38 \
-    bioconductor-bsgenome.hsapiens.ucsc.hg19
+    bioconda::bioconductor-bsgenome.hsapiens.ucsc.hg38 \
+    bioconda::bioconductor-bsgenome.hsapiens.ucsc.hg19
