@@ -1,0 +1,222 @@
+import pandas as pd
+import os.path as path
+
+# ==============================================================================
+# Configuration
+# ==============================================================================
+CONFIG = pd.read_csv('config.tsv', index_col=False, sep='\t')
+
+REPORT_DIR = 'Reports'
+FASTQ_DIR = 'FASTQs'
+TRIM_DIR = 'Trimmed'
+ALIGN_DIR = 'Aligned'
+METH_DIR = 'Methylation'
+
+SAMPLES = CONFIG["Sample"].tolist()
+READS = [1, 2]
+CONTEXTS = ["CpG", "CHG", "CHH"]
+STRANDS = ["OT", "OB"]
+
+# ==============================================================================
+# Meta Rules
+# ==============================================================================
+rule all:
+    input:
+        path.join(REPORT_DIR, 'rulegraph.png'),
+        # FastQC reports
+        expand(path.join(FASTQ_DIR, "{sample}_R{read}_fastqc.{ext}"), sample=SAMPLES, read=READS, ext=["html", "zip"]),
+        # Trimming reports
+        expand(path.join(REPORT_DIR, "{sample}_R{read}.trimming_report.txt"), sample=SAMPLES, read=READS),
+        expand(path.join(TRIM_DIR, "{sample}_R{read}.trimmed.fastq.gz"), sample=SAMPLES, read=READS),
+        # Bismark alignment output files
+        expand(path.join(ALIGN_DIR, "{sample}.deduplicated.sorted.bam"), sample=SAMPLES),
+        expand(path.join(ALIGN_DIR, "{sample}.deduplicated.sorted.bam.bai"), sample=SAMPLES),
+        # Bismark methylation extraction files
+        expand(path.join(METH_DIR, "{context}_{strand}_{sample}.txt.gz"), context=CONTEXTS, strand=STRANDS, sample=SAMPLES),
+        # summary report
+        expand(path.join(REPORT_DIR, "{sample}.complete_report.html"), sample=SAMPLES),
+
+rule rulegraph:
+    output:
+        path.join(REPORT_DIR, 'rulegraph.png'),
+    shell:
+        'snakemake --rulegraph | dot -Tpng > {output}'
+
+rule all_methcall:
+    input:
+        expand("Bismark/{sample}.cov_CpG.bedGraph.gz", sample=SAMPLES),
+        expand("Bismark/{sample}.mbias.txt", sample=SAMPLES),
+        expand("Bismark/{sample}.mbias_{strand}.svg", sample=SAMPLES, strand=STRANDS),
+
+
+# ==============================================================================
+# Rules
+# ==============================================================================
+rule fastqc:
+    input:
+        "FASTQs/{fastq}.fastq.gz"
+    output:
+        "FastQC/{fastq}_fastqc.html",
+        "FastQC/{fastq}_fastqc.zip"
+    shell:
+        "fastqc {input} -o FastQC"
+
+rule trim_galore:
+    input:
+        "FASTQs/{sample}_R1.fastq.gz",
+        "FASTQs/{sample}_R2.fastq.gz"
+    output:
+        path.join(TRIM_DIR, "{sample}_R1_val_1.fq.gz"),
+        path.join(TRIM_DIR, "{sample}_R2_val_2.fq.gz"),
+        path.join(TRIM_DIR, "{sample}_R1.fastq.gz_trimming_report.txt"),
+        path.join(TRIM_DIR, "{sample}_R2.fastq.gz_trimming_report.txt"),
+        path.join(TRIM_DIR, "{sample}_R1_val_1_fastqc.html"),
+        path.join(TRIM_DIR, "{sample}_R1_val_1_fastqc.zip"),
+        path.join(TRIM_DIR, "{sample}_R2_val_2_fastqc.html"),
+        path.join(TRIM_DIR, "{sample}_R2_val_2_fastqc.zip")
+    params:
+        "--gzip --paired -q 30 -o {TRIM_DIR} --fastqc_args '-o {TRIM_DIR}'"
+    shell:
+        "trim_galore {params} {input}"
+
+rule rename_trim_galore:
+    input:
+        fq1 = path.join(TRIM_DIR, "{sample}_R1_val_1.fq.gz"),
+        fq2 = path.join(TRIM_DIR, "{sample}_R2_val_2.fq.gz"),
+        rp1 = path.join(TRIM_DIR, "{sample}_R1.fastq.gz_trimming_report.txt"),
+        rp2 = path.join(TRIM_DIR, "{sample}_R2.fastq.gz_trimming_report.txt"),
+        qc1 = path.join(TRIM_DIR, "{sample}_R1_val_1_fastqc.html"),
+        qz1 = path.join(TRIM_DIR, "{sample}_R1_val_1_fastqc.zip"),
+        qc2 = path.join(TRIM_DIR, "{sample}_R2_val_2_fastqc.html"),
+        qz2 = path.join(TRIM_DIR, "{sample}_R2_val_2_fastqc.zip")
+    output:
+        fq1 = path.join(TRIM_DIR, "{sample}_R1.trimmed.fastq.gz"),
+        fq2 = path.join(TRIM_DIR, "{sample}_R2.trimmed.fastq.gz"),
+        rp1 = path.join(REPORT_DIR, "{sample}_R1.trimming_report.txt"),
+        rp2 = path.join(REPORT_DIR, "{sample}_R2.trimming_report.txt"),
+        qc1 = path.join(REPORT_DIR, "{sample}_R1.trimmed_fastqc.html"),
+        qc2 = path.join(REPORT_DIR, "{sample}_R2.trimmed_fastqc.html"),
+        qz1 = path.join(REPORT_DIR, "{sample}_R1.trimmed_fastqc.zip"),
+        qz2 = path.join(REPORT_DIR, "{sample}_R2.trimmed_fastqc.zip")
+    run:
+        commands = [
+            "mv {input.fq1} {output.fq1}",
+            "mv {input.fq2} {output.fq2}",
+            "mv {input.rp1} {output.rp1}",
+            "mv {input.rp2} {output.rp2}",
+            "mv {input.qc1} {output.qc1}",
+            "mv {input.qc2} {output.qc2}",
+            "mv {input.qz1} {output.qz1}",
+            "mv {input.qz2} {output.qz2}"
+        ]
+        command_string = "; ".join(commands)
+        shell(command_string)
+
+rule bismark:
+    input:
+        path.join(TRIM_DIR, "{sample}_R1.trimmed.fastq.gz"),
+        path.join(TRIM_DIR, "{sample}_R2.trimmed.fastq.gz")
+    output:
+        bam = protected(path.join(ALIGN_DIR, "{sample}_R1.trimmed_bismark_bt2_pe.bam")),
+        report = path.join(ALIGN_DIR, "{sample}_R1.trimmed_bismark_bt2_PE_report.txt")
+    params:
+        "-n 1 ../Bismark_hg38_Bowtie2/ -o Bismark"
+    shell:
+        "bismark {params} -1 {input[0]} -2 {input[1]}"
+
+rule rename_bismark:
+    input:
+        bam = path.join(ALIGN_DIR, "{sample}_R1.trimmed_bismark_bt2_pe.bam"),
+        rpt = path.join(ALIGN_DIR, "{sample}_R1.trimmed_bismark_bt2_PE_report.txt")
+    output:
+        bam = path.join(ALIGN_DIR, "{sample}.bam"),
+        rpt = path.join(REPORT_DIR, "{sample}.bismark_report.txt")
+    run:
+        commands = [
+            "mv {input.bam} {output.bam}",
+            "mv {input.report} {output.report}"
+        ]
+        command_string = "; ".join(commands)
+        shell(command_string)
+
+rule deduplicate_bismark:
+    input:
+        path.join(ALIGN_DIR, "{sample}.bam")
+    output:
+        path.join(ALIGN_DIR, "{sample}.deduplicated.bam"),
+        path.join(ALIGN_DIR, "{sample}.deduplication_report.txt")
+    params:
+        "-p --bam"
+    shell:
+        "deduplicate_bismark {params} --output_dir {ALIGN_DIR} {input}"
+
+rule rename_dedup:
+    input:
+        path.join(ALIGN_DIR, "{sample}.deduplication_report.txt")
+    output:
+        path.join(REPORT_DIR, "{sample}.deduplication_report.txt")
+    shell:
+        "mv {input} {output}"
+
+rule extract_meth:
+    input:
+        path.join(ALIGN_DIR, "{sample}.deduplicated.sorted.bam")
+    output:
+        expand(path.join(METH_DIR, "{context}_{strand}_{{sample}}.txt.gz"), context=CONTEXTS, strand=STRANDS),
+        path.join(METH_DIR, "{sample}.M-bias.txt"),
+        path.join(METH_DIR, "{sample}.bismark.cov.gz"),
+        path.join(METH_DIR, "{sample}_splitting_report.txt"),
+    params:
+        "-p --gzip --bedGraph"
+    shell:
+        "bismark_methylation_extractor {params} -o {METH_DIR} {input}"
+
+rule rename_meth_extract:
+    input:
+        mbias = path.join(METH_DIR, "{sample}.M-bias.txt"),
+        cov =   path.join(METH_DIR, "{sample}.bismark.cov.gz"),
+        split = path.join(METH_DIR, "{sample}_splitting_report.txt"),
+    output:
+        mbias = path.join(REPORT_DIR, "{sample}.M-bias.txt"),
+        cov =   path.join(REPORT_DIR, "{sample}.bismark.cov.gz"),
+        split = path.join(REPORT_DIR, "{sample}_splitting_report.txt"),
+    run:
+        commands = [
+            "mv {input.mbias} {output.mbias}",
+            "mv {input.cov} {output.cov}",
+            "mv {input.split} {output.split}",
+        ]
+        command_string = "; ".join(commands)
+        shell(command_string)
+
+rule bismark2report:
+    input:
+        align = path.join(REPORT_DIR, "{sample}.bismark_report.txt",
+        dedup = path.join(REPORT_DIR, "{sample}.deduplication_report.txt",
+        split = path.join(REPORT_DIR, "{sample}.splitting_report.txt",
+        mbias = path.join(REPORT_DIR, "{sample}.M-bias.txt"
+    output:
+        path.join(REPORT_DIR, "{sample}.complete_report.html")
+    shell:
+        "bismark2report -o {output} --alignment_report {input.align} --dedup_report {input.dedup} --splitting_report {input.split} --mbias_report {input.mbias} --nucleotide_report 'none'"
+
+
+# ==============================================================================
+# Tools
+# ==============================================================================
+rule sort:
+    input:
+        "{bam}.bam"
+    output:
+        "{bam}.sorted.bam",
+        "{bam}.sorted.bam.bai"
+    shell:
+        "sambamba sort {input} -o {output}"
+
+rule zip:
+    input:
+        "{file}"
+    output:
+        "{file}.gz"
+    shell:
+        "gzip {input}"
