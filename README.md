@@ -79,6 +79,7 @@ You can directly read in tables from `bismark_methylation_extractor` to make thi
 You then specify the test covariate (your condition of interest) and other nuisance covariates (sequencing batch or age, for example) for each sample in a design matrix and test for differential methylation.
 
 This can be done with single- or multi-threaded processes to decrease runtime.
+[`pipeline/call-dmrs.R`](pipeline/call-dmrs.R) is an example script that can be modified for your specific use.
 See the [documentation on Bioconductor](https://bioconductor.org/packages/release/bioc/html/dmrseq.html) for more details.
 
 # References
