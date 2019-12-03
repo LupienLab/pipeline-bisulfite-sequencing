@@ -42,12 +42,6 @@ rule rulegraph:
     shell:
         'snakemake --rulegraph | dot -Tpng > {output}'
 
-rule all_methcall:
-    input:
-        expand("Bismark/{sample}.cov_CpG.bedGraph.gz", sample=SAMPLES),
-        expand("Bismark/{sample}.mbias.txt", sample=SAMPLES),
-        expand("Bismark/{sample}.mbias_{strand}.svg", sample=SAMPLES, strand=STRANDS),
-
 
 # ==============================================================================
 # Rules
