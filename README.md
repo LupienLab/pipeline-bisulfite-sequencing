@@ -14,7 +14,7 @@ The core packages are found in `environment.sh`, if you want to install packages
 
 # Usage
 
-## Activiate the conda environment
+## Activate the conda environment
 
 This will let you access all of the software you'll likely need.
 
@@ -37,7 +37,22 @@ cd your/data/directory/
 
 This will allow you to run `snakemake` in the `your/data/directory/` folder, read the rules written in `Snakefile`, and pre-process your data.
 
-With this done, you can start the bioinformatic pipeline for pre-processing your data.
+## Run the pre-processing pipeline with Snakemake
+
+Run
+
+```shell
+snakemake -n
+```
+
+to preview what jobs you're about to run.
+If this lists all the steps your expect for each sample, you can tell Snakemake to execute the jobs with
+
+```shell
+snakemake
+```
+
+Next, we'll cover what the bioinformatic pipeline for pre-processing your data entails.
 
 # Pre-processing Pipeline
 
@@ -104,6 +119,23 @@ You then specify the test covariate (your condition of interest) and other nuisa
 This can be done with single- or multi-threaded processes to decrease runtime.
 [`pipeline/call-dmrs.R`](pipeline/call-dmrs.R) is an example script that can be modified for your specific use.
 See the [documentation on Bioconductor](https://bioconductor.org/packages/release/bioc/html/dmrseq.html) for more details.
+
+Copy `pipeline/call-dmrs.R` into `your/data/directory/` and edit it such that you will be comparing your condition of interest and controlling for other confounding factors.
+
+Run the script by running
+
+```shell
+Rscript call-dmrs.R config.tsv Methylation/sample1.bismark.cov.gz Methylation/sample2.bismark.cov.gz ...
+```
+
+See comments in the script for details on where to edit it.
+
+## QC metrics for DMRs
+
+Plot a histogram of the p-values from the DMR calls, to ensure they don't have odd behaviour.
+See [this blog post](http://varianceexplained.org/statistics/interpreting-pvalue-histogram/) for an explanation of what its shape can tell you.
+
+To limit false discoveries that may not be biologically meaningful, consider DMRs that have a median change in methylation of >= 10% between your test conditions (or larger if you choose).
 
 # References
 

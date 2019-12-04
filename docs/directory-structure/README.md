@@ -21,9 +21,9 @@ A header row should be included.
 For example:
 
 ```
-Sample	Condition
-sample1	Control
-sample2	Control
-sample3	Treatment
-sample4	Treamtent
+Sample	Condition	SeqBatch
+sample1	Control	A
+sample2	Control	B
+sample3	Treatment	B
+sample4	Treamtent	C
 ```

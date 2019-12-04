@@ -11,15 +11,15 @@ if (!interactive()) {
         description = "Perform DMR calculations using DMRSeq"
     )
     PARSER$add_argument(
+        "meta",
+        type = "character",
+        help = "Metadata TSV file"
+    )
+    PARSER$add_argument(
         "cov",
         type = "character",
         help = "Bismark methylation extractor coverage output files",
         nargs="+"
-    )
-    PARSER$add_argument(
-        "meta",
-        type = "character",
-        help = "Metadata TSV file"
     )
     PARSER$add_argument(
         "-o", "--output",
@@ -46,23 +46,26 @@ meta = fread(
     sep = "\t",
     header = TRUE
 )
-pData(bs)$Condition = meta$Condition
-pData(bs)$ID = meta$Sample
-pData(bs)$SeqBatch = meta$SeqBatch
+
+# add the relevant metadata columns to be tested or controlled for
+pData(bismark_counts)$ID = meta$Sample
+pData(bismark_counts)$Condition = meta$Condition
+pData(bismark_counts)$SeqBatch = meta$SeqBatch
 
 # sort before smoothing
-bs = sort(bs)
+bismark_counts = sort(bismark_counts)
 
 # ==============================================================================
 # Analysis
 # ==============================================================================
-# params = BatchJobsParam(4)
+# set to multi-threaded parallel processing
+# comment out this line to stick with single-thread processing
 params = MulticoreParam(8)
 
 # perform DMR calculations
 cat("Finding DMRs\n")
 regions = dmrseq(
-    bs,
+    bismark_counts,
     cutoff = 0.05,
     # test for condition
     testCovariate = "Condition",
