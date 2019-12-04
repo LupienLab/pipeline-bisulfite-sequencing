@@ -14,13 +14,30 @@ The core packages are found in `environment.sh`, if you want to install packages
 
 # Usage
 
-Activate the conda environment to access all of the software you'll likely need.
+## Activiate the conda environment
+
+This will let you access all of the software you'll likely need.
 
 ```shell
 conda activate BSseq
 ```
 
-After this, you'll need to go through the bioinformatic pipeline for pre-processing your data.
+## List your metadata in `config.tsv`
+
+`config.tsv` should contain all relevant metadata to your samples.
+Each row of `config.tsv` is a sample and each column is a particular feature you want to consider for pre-processing or analysis.
+See [detailed notes](docs/directory-structure/README.md) for more information.
+
+## Copy `Snakefile` to your data directory
+
+```shell
+cp pipeline/Snakefile your/data/directory/
+cd your/data/directory/
+```
+
+This will allow you to run `snakemake` in the `your/data/directory/` folder, read the rules written in `Snakefile`, and pre-process your data.
+
+With this done, you can start the bioinformatic pipeline for pre-processing your data.
 
 # Pre-processing Pipeline
 
@@ -70,11 +87,17 @@ These metrics include:
 
 A more detailed description of what to look out for can be found in [the detailed docs](docs/bismark/README.md).
 
+If your data has good QC metrics, you're ready to proceed to your analysis.
+
+# Analysis
+
+The most common analysis step for bisulfite-sequencing data is calling differentially methylated regions (DMRs) in your samples between your desired conditions.
+
 ## dmrseq
 
-`dmrseq` [4] is an R package developed to call differentially methylated regions (DMRs) from bisulfite-sequencing data while controlling for false discoveries.
+`dmrseq` [4] is an R package developed to call DMRs from bisulfite-sequencing data while controlling for false discoveries.
 
-This tool starts by calculating matrices (CpGs by samples) of methylated and total read counts.
+This tool starts by calculating matrices (`CpG`s by samples) of methylated and total read counts.
 You can directly read in tables from `bismark_methylation_extractor` to make this process simpler.
 You then specify the test covariate (your condition of interest) and other nuisance covariates (sequencing batch or age, for example) for each sample in a design matrix and test for differential methylation.
 
