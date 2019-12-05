@@ -185,10 +185,10 @@ rule rename_meth_extract:
 
 rule bismark2report:
     input:
-        align = path.join(REPORT_DIR, "{sample}.bismark_report.txt",
-        dedup = path.join(REPORT_DIR, "{sample}.deduplication_report.txt",
-        split = path.join(REPORT_DIR, "{sample}.splitting_report.txt",
-        mbias = path.join(REPORT_DIR, "{sample}.M-bias.txt"
+        align = path.join(REPORT_DIR, "{sample}.bismark_report.txt"),
+        dedup = path.join(REPORT_DIR, "{sample}.deduplication_report.txt"),
+        split = path.join(REPORT_DIR, "{sample}.splitting_report.txt"),
+        mbias = path.join(REPORT_DIR, "{sample}.M-bias.txt")
     output:
         path.join(REPORT_DIR, "{sample}.complete_report.html")
     shell:
