@@ -58,7 +58,7 @@ Next, we'll cover what the bioinformatic pipeline for pre-processing your data e
 
 The overall pipeline looks like this:
 
-![Pre-processing pipeline]()
+![Pre-processing pipeline](pipeline/pipeline.png)
 
 A brief description of each step is below.
 
