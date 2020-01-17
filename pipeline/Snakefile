@@ -29,8 +29,8 @@ rule all:
         expand(path.join(REPORT_DIR, "{sample}_R{read}.trimming_report.txt"), sample=SAMPLES, read=READS),
         expand(path.join(TRIM_DIR, "{sample}_R{read}.trimmed.fastq.gz"), sample=SAMPLES, read=READS),
         # Bismark alignment output files
-        expand(path.join(ALIGN_DIR, "{sample}.deduplicated.sorted.bam"), sample=SAMPLES),
-        expand(path.join(ALIGN_DIR, "{sample}.deduplicated.sorted.bam.bai"), sample=SAMPLES),
+        expand(path.join(ALIGN_DIR, "{sample}.deduplicated.bam"), sample=SAMPLES),
+        expand(path.join(ALIGN_DIR, "{sample}.deduplicated.bam.bai"), sample=SAMPLES),
         # Bismark methylation extraction files
         expand(path.join(METH_DIR, "{context}_{strand}_{sample}.txt.gz"), context=CONTEXTS, strand=STRANDS, sample=SAMPLES),
         # summary report
@@ -154,7 +154,7 @@ rule rename_dedup:
 
 rule extract_meth:
     input:
-        path.join(ALIGN_DIR, "{sample}.deduplicated.sorted.bam")
+        path.join(ALIGN_DIR, "{sample}.deduplicated.bam")
     output:
         expand(path.join(METH_DIR, "{context}_{strand}_{{sample}}.txt.gz"), context=CONTEXTS, strand=STRANDS),
         path.join(METH_DIR, "{sample}.M-bias.txt"),
@@ -198,15 +198,6 @@ rule bismark2report:
 # ==============================================================================
 # Tools
 # ==============================================================================
-rule sort:
-    input:
-        "{bam}.bam"
-    output:
-        "{bam}.sorted.bam",
-        "{bam}.sorted.bam.bai"
-    shell:
-        "sambamba sort {input} -o {output}"
-
 rule zip:
     input:
         "{file}"
